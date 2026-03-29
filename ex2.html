@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guest Phone by Destination.</title>
+    <link rel="stylesheet" href="../CSS/ex2.css">
+</head>
+<body>
+
+<div class="container">
+    <h1>ទស្សន៍ទាយលេខទូរស័ព្ទ</h1>
+    <hr>
+
+    <form onsubmit="predictPhoneNumber(event)">
+        <label>បញ្ចូលលេខទូរស័ព្ទ:</label>
+        <input type="text" id="phone" 
+               onkeypress="allowOnlyNumbers(event)" 
+               oninput="formatPhoneNumber(this)"
+               placeholder="012345678">
+
+        <button type="submit">ទស្សន៍ទាយ</button>
+    </form>
+
+    <div id="resultContainer" style="display:none;"></div>
+</div>
+
+<script>
+
+// 👉 Class
+class PhoneNumberPredictor {
+    constructor() {
+        this.predictions = {
+                    1: { status: 'ល្អណាស់', message: 'រីកចំរើនល្អអាចទទួលបានជ័យជំនះ' },
+                    2: { status: 'ធម្មតា', message: 'មានលាភមានបង់មិនទទួលផលអ្វីទេ' },
+                    3: { status: 'ល្អណាស់', message: 'មានភាពរីកចំរើនអ្វីៗអាចសំរេចបានដូចបំណង' },
+                    4: { status: 'អាក្រក់', message: 'ផ្លូវអនាគតមានឧបសគ្គច្រើនលំបាកវេទនា' },
+                    5: { status: 'ល្អណាស់', message: 'រកស៊ីមានបានទទួលបានទាំងកិត្តិយសទាំងផលប្រយោជន៍' },
+                    6: { status: 'ល្អណាស់', message: 'មានសំណាងច្រើនអាចទទួលបានគុណសម្បត្តិធំ' },
+                    7: { status: 'ល្អ', message: 'មានចិត្តអត់ធ្មត់ ពិតជាអាចទទួលបានជោគជ័យដ៏ធំ' },
+                    8: { status: 'ល្អ', message: 'អាចមានឱកាសទទួលបានជោគជ័យ' },
+                    9: { status: 'អាក្រក់', message: 'ឯកកោ គ្មានអ្នកជួយ ពិបាកទទួលបានជោគជ័យ' },
+                    10: { status: 'អាក្រក់', message: 'ខាតបង់ទឹកចិត្តនិងកម្លាំង ខិតខំដោយឥតបានផល' },
+                    11: { status: 'ល្អ', message: 'មានលំនឹងល្អ' },
+                    12: { status: 'អាក្រក់', message: 'ទន់ខ្សោយ ធ្វើអ្វីក៏មិនបានសម្រេច' },
+                    13: { status: 'ល្អណាស់', message: 'មានសំណាងល្អ ក្តីសង្ឃឹមច្រើន' },
+                    14: { status: 'ធម្មតា', message: 'ជ័យជំនះ ឬបរាជ័យ អាស្រ័យលើការតាំងចិត្តរបស់ខ្លួន' },
+                    15: { status: 'ល្អ', message: 'ជ័យជំនះច្រើន មានការរីកចម្រើន' },
+                    16: { status: 'ល្អណាស់', message: 'អាចសម្រេចកិច្ចការធំបាន ទទួលទាំងកិត្តិយសទាំងផលប្រយោជន៍' },
+                    17: { status: 'ល្អ', message: 'មានអ្នកជួយ អាចទទួលបានជោគជ័យ' },
+                    18: { status: 'ល្អ', message: 'មានភាពរីកចម្រើនច្រើន នឹងបានសម្រេចដូចបំណង' },
+                    19: { status: 'អាក្រក់', message: 'មានទំនាស់ច្រើន មានឧបសគ្គ' },
+                    20: { status: 'អាក្រក់', message: 'ឧបសគ្គច្រើន ឈឺច្រើន ពិបាកចិត្តច្រើន' },
+                    21: { status: 'ល្អ', message: 'ធ្វើការល្អិតល្អន់ មានប្រាថ្នា' },
+                    22: { status: 'អាក្រក់ណាស់', message: 'ខាតបង់ ធ្វើអ្វីក៏មិនបានសម្រេចដូចបំណង' },
+                    23: { status: 'ល្អណាស់', message: 'កិត្តិយសល្អ សម្រេចកិច្ចការធំបាន' },
+                    24: { status: 'ល្អ', message: 'ពឹងផ្អែកលើសមត្ថភាពផ្ទាល់ខ្លួន អាចសម្រេចកិច្ចការបាន' },
+                    25: { status: 'ល្អណាស់', message: 'មានសំណាងល្អ មានគេជួយ' },
+                    26: { status: 'អាក្រក់ណាស់', message: 'មានឧបសគ្គច្រើន' },
+                    27: { status: 'ល្អ', message: 'អាចមានលាភសំណាងនិងជ័យជំនះ' },
+                    28: { status: 'ល្អណាស់', message: 'រាសីឡើងខ្ពស់ រកស៊ីមានបាន' },
+                    29: { status: 'អាក្រក់', message: 'សំណាងល្អនិងអាក្រក់ កើតមានឡើងប្រសព្វគ្នា' },
+                    30: { status: 'ល្អណាស់', message: 'ទទួលបាននូវលាភសំណាងនិងកិត្តិយស' },
+                    31: { status: 'ល្អណាស់', message: 'មានសំណាង អាចទទួលជោគជ័យ' },
+                    32: { status: 'ល្អ', message: 'មានប្រាជ្ញា មានភាពវៃឆ្លាតច្រើន' },
+                    33: { status: 'អាក្រក់ណាស់', message: 'ជួបឧបសគ្គមិនចេះអស់ ពិបាកនឹងទទួលបានជោគជ័យ' },
+                    34: { status: 'ធម្មតា', message: 'ត្រូវមានលំនឹងចិត្ត កុំប្រកាន់' },
+                    35: { status: 'អាក្រក់', message: 'ឧបសគ្គច្រើន តែងជួបភាពលំបាក' },
+80: { status: 'ល្អណាស់', message: 'អាចទទួលបានជោគជ័យច្រើន' }
+        };
+    }
+
+    calculateNumber(phoneNumber) {
+        const clean = phoneNumber.replace(/[^0-9]/g,'');
+        if (!clean || (clean.length!==9 && clean.length!==10)) return null;
+
+        const lastSix = clean.slice(-6);
+        const division = parseInt(lastSix)/80;
+        const decimal = division.toFixed(10).split('.')[1].substring(0,2);
+        const final = parseFloat('0.'+decimal)*80;
+
+        return Math.round(final);
+    }
+
+    getPrediction(phoneNumber){
+        const number = this.calculateNumber(phoneNumber);
+        if(number===null){
+            return {success:false,message:'សូមបញ្ចូលលេខ 9 ឬ 10 ខ្ទង់'};
+        }
+
+        if(this.predictions[number]){
+            return {
+                success:true,
+                number:number,
+                status:this.predictions[number].status,
+                prediction:this.predictions[number].message,
+                original_number:phoneNumber
+            };
+        }else{
+            return {success:false,message:'មិនមានទិន្នន័យ'};
+        }
+    }
+}
+
+const predictor = new PhoneNumberPredictor();
+
+function allowOnlyNumbers(e){
+    if(!/[0-9]/.test(e.key) && e.key!=="Backspace"){
+        e.preventDefault();
+    }
+}
+
+function formatPhoneNumber(input){
+    input.value = input.value.replace(/[^0-9]/g,'').slice(0,10);
+}
+
+function predictPhoneNumber(e){
+    e.preventDefault();
+    const phone = document.getElementById('phone').value;
+
+    if(!phone){
+        showError('សូមបញ្ចូលលេខទូរស័ព្ទ');
+        return;
+    }
+
+    const result = predictor.getPrediction(phone);
+    displayResult(result);
+}
+
+function showError(msg){
+    const c = document.getElementById('resultContainer');
+    c.style.display='block';
+    c.innerHTML=<div class="error-message">${msg}</div>;
+}
+
+function displayResult(result){
+    const c = document.getElementById('resultContainer');
+    c.style.display='block';
+
+    if(!result.success){
+        c.innerHTML=<div class="error-message">${result.message}</div>;
+        return;
+    }
+
+    c.innerHTML=`
+    <div class="result status-good">
+        <h3>លទ្ធផល</h3>
+        <p>លេខ: ${result.original_number}</p>
+        <p>លេខគណនា: ${result.number}</p>
+        <p>ស្ថានភាព: ${result.status}</p>
+        <p>${result.prediction}</p>
+    </div>`;
+}
+
+</script>
+
+</body>
+</html>
